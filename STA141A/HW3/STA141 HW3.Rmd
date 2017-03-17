@@ -1,0 +1,155 @@
+---
+title: "STA141 HW3"
+author: "Hiu Man (Stephanie) Lam (ID: 913358632)"
+date: "11/9/2016"
+output: html_document
+---
+```{}
+#package used:
+library(ggplot2) 
+library(ggrepel) #used for better text label on plot
+library(maptools)
+library(sp)
+library(maps) 
+library(plyr)
+library(ggmap)
+```
+
+###Problem 1
+```{}
+ucdata <- read.csv("/Volumes/StorEDGE/*ucdavis/STA141A/UC_US_News_Ranking_2017.csv")
+
+#find all the lat/lon coordinates for each UC
+ucd = geocode("davis, California",output="latlon")
+ucb = geocode("berkeley, California, USA",output="latlon")
+ucla = geocode("Los Angeles, California, USA", output = "latlon")
+ucsb = geocode("Santa Barbara, California, USA", output = "latlon")
+uci = geocode("Irvine, California, USA", output = "latlon")
+ucsd = geocode("UC San Diego, California, USA", output = "latlon")
+ucsc= geocode("UC Santa Cruz, California, USA", output = "latlon")
+ucr = geocode("UC Riverside, California, USA", output = "latlon")
+ucm = geocode("UC Merced, California,USA", output = "latlon")
+
+lon<-c(-122.2727,-118.2437,-119.6982,-117.7947,-121.7405,-117.2413,-122.0595,-117.3962,-120.4247)
+lat<- c(37.87159,34.05223,34.42083,33.68395,38.54491,32.88666,36.98328,33.95335,37.36646)
+labels<-c("UC Berkeley","UC Los Angeles","UC Santa Barbara","UC Irvine","UC Davis","UC San Diego","UC Santa Cruz", "UC Riverside", "UC Merced")
+
+df<-data.frame(lon, lat, labels)
+df$latlon = paste0(df$lat, ", ", df$lon)
+
+combns = combn(df$latlon, 2)
+  
+bike_paths = mapply(function(from, to) {
+  #get the bicycle paths
+  path = route(from, to, mode = "bicycling", structure = "route")
+  
+  #check if the result is a data frame
+  if(!is.data.frame(path))
+    return(NULL)
+    
+  #set names
+  path$tofrom = paste0(from, to)
+    
+  return(path)
+}, combns[1, ], combns[2, ], SIMPLIFY = FALSE) #finding the unique pairs 
+  
+#bind all data frames together and use do.call to call the function
+bike_paths = do.call(rbind, bike_paths)
+bike_paths = data.frame(bike_paths)
+bike_paths$tofrom = factor(bike_paths$tofrom) #create a column to the data
+head(bike_paths)
+  
+setwd("/Users/stephanie/Desktop/tl_2016_us_state")
+stateshapefile = readShapeSpatial("tl_2016_us_state")
+states = fortify(stateshapefile) #convert into data frame
+group.id = unique(states$group)
+# subset data to isolate California 
+states = subset(states,group == group.id[16])
+
+#create relative rank
+uc_rank = rank(ucdata$Rank)
+
+#display the map of the entire problem 1
+#plot the satellite map of california
+california = get_map("california",zoom=6, maptype="satellite",color = "color")
+ggmap(california) +  
+    #set border
+    geom_polygon(aes(x=long, y=lat, group=group), data=states, colour="white",alpha=.4,size=1) +
+  
+    #plot the bike route onto the map
+    geom_path(aes(lon, lat, group = tofrom), data = bike_paths, color = "blue")+
+    ggtitle("Satellite map of California with Bike Paths") +
+    xlab("Longitude") +
+    ylab("Latitude") +
+  
+    #display location of each university and other information by using aesthetics
+    geom_point(data = df, aes(x = df$lon, y = df$lat, size = Acceptance.Rate, color = factor(uc_rank), alpha = Student.Population)) +
+    geom_text_repel(data = df, aes(x = lon, y = lat, label = labels), color = "red", segment.color = "black", segment.size = 0.5) 
+
+```
+
+
+
+###Problem 2
+```{}
+###(i)
+ucdata$cities <- c("Berkeley, California", "Los Angeles, California", "Santa Barbara, California", "Irvine, California", "Davis, California", "San Diego, California", "Santa Cruz, California", "Riverside, California", "Merced, California")
+
+combns = combn(ucdata$cities, 2)
+  
+driving_paths = mapply(function(from, to) {
+  #get the driving paths
+  path1 = mapdist(from, to, mode = "driving", output = "simple")
+  if(!is.data.frame(path1))
+    return(NULL)
+    
+  path1$tofrom = paste0(from," to ", to)
+    
+  return(path1)
+}, combns[1, ], combns[2, ], SIMPLIFY = FALSE) #finding the unique pairs
+  
+driving_paths = do.call(rbind, driving_paths)
+driving_paths = data.frame(driving_paths)
+driving_paths$tofrom = factor(driving_paths$tofrom)
+head(driving_paths)
+```
+
+```{}
+###(ii)
+library(igraph)
+
+#subset the paths that has driving distance of less than 100 miles
+subset1 = subset(driving_paths,miles<100)
+
+#use igraph function graph.formula() to create a graph
+gr1 = graph.formula("Berkeley, California"-"Davis, California", 
+                    "Berkeley, California"-"Santa Cruz, California", 
+                    "Los Angeles, California"-"Santa Barbara, California",
+                    "Los Angeles, California"-"Irvine, California",
+                    "Los Angeles, California"-"Riverside, California",
+                    "Irvine, California"-"San Diego, California",
+                    "Irvine, California"-"Riverside, California",
+                    "Merced, California")
+
+# returns the set of edges of gr1
+E(gr1)  
+
+#expresses the graph in a compact form, showing the list of nodes that each node is connected to
+str(gr1)
+```
+
+```{}
+###(iii),(iv)
+
+#look at the order of the vertices
+V(gr1)
+
+#separate colors for depicting campuses depending on whether the student enrollment is less than 20,000 or greater than that
+V(gr1)$color = c("blue","blue", "red", "blue", "blue", "blue", "red", "blue", "red")
+
+#plot the Undirected graph
+plot(gr1, main="Undirected Graph of the UC Neighbors")
+
+#add a legend to label the separate colors
+legend("topleft",c("More than 20000", "less than 20000"),lty= c(1,1), lwd=c(2.5,2.5), col = c("blue","red"), title = "Student Enrollment", pch=c(1,1), cex=1, pt.cex = 1, bty='n')
+```

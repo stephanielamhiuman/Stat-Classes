@@ -1,0 +1,362 @@
+---
+title: "STA141A HW1"
+author: "Hiu Man Lam"
+date: "10/8/2016"
+output: html_document
+---
+###Problem 1
+```{r}
+#This function takes in the sequence of length, the probability π00, π11, and the initial value(0 or 1)
+
+markov_chain <- function(n,p00,p11,x1) {
+  s<-c(x1) #create an empty vector that includes the initial value
+  
+  #loop over the vectors
+  #if the initial value is 0, gives 1 value with probability 1-p00 and store it into the vector
+  #if the initial value is 1, gives 1 value with probability p11 and store it into the vector
+  for(i in 2:n){ 
+    if(x1 == 0){
+      s[i] <- rbinom(1,1,1-p00) 
+    }
+    else if (x1 == 1){
+      s[i] <- rbinom(1,1,p11)
+    }
+  }
+  return(s) #return the sequence of random variable 
+}
+```
+
+###Problem 2
+#### For this problem, I worked with Janet Loyola and got the idea from Patrick Vacek during Statistics club study session.
+```{r}
+#This function takes a sequence (vector) of 0 or 1 as input and returns the starting locations of runs of 0’s and runs of 1’s, k is the the length of runs
+
+runfunction<-function(seq,k=1){
+  #create empty vectors
+  zeroes <- numeric(0)
+  ones <- numeric(0) 
+  #set length of n to be the length(x)-k+1
+  n <- length(seq)-k+1
+  counter = 1
+  for(i in 1:n) {
+    #loop over the sequence, 
+    #apply identical to ones to check if its matched with the same numbers of k
+    if (identical(seq[counter:(counter+k-1)], rep(1,k)) == TRUE){
+      #if its identical, store the index to the variable "ones"
+      ones = c(ones,counter)
+    }
+    #do the same for the zeros
+    else if (identical(seq[counter:(counter+k-1)], rep(0,k)) == TRUE){
+      zeroes = c(zeroes,counter)
+    }
+    #move to next counter
+    counter = counter + 1
+  }
+  #return the list of the starting locations of runs of 0’s and runs of 1’s
+  return(list(zeroes = zeroes,ones = ones))
+}
+```
+
+###Problem 3
+#### In the problem, I got the idea from Janet Loyola and Samual Kadin and got help with the code from TA office hour.
+```{r}
+runfunction2<-function(seq,start,end){
+  #create empty vectors
+  start_vector = numeric(0)
+  end_vector = numeric(0)
+  len_start = length(start) #get the length of the start motif
+  len_end =length(end) #get the length of the end motif
+  n <- length(seq) #get the length of the sequence
+  for( i in 1:(n-len_start-len_end+1) )  {
+    #look for the start motif
+    if ( all(seq[i:(i+len_start-1)] == start)){
+       for(j in (i+len_start):(n-len_end+1)) {
+        #check if the sequence is same to the end motif
+         if (all(seq[j:(j+len_end-1)]== end)){
+          #if its the same, save the locations
+           start_vector = c(start_vector, i)
+           end_vector = c(end_vector, j)
+         }
+       }
+    }
+  }
+  
+  #return the starting location, ending location and the length between them
+  return(list(start = start_vector,end = end_vector, length = end_vector-start_vector+length(end)))
+}
+
+```
+
+
+###Problem 4
+####In the problem, I got help from the TA office hour. 
+####4(i)
+####(a) p00 = 0.5, p01 = 0.5, p10 = 0.5, p11 = 0.5
+```{r}
+#use problem 1's function to find the sequence
+seq_a = markov_chain(10000,0.5,0.5,0)
+
+#use lapply function to find all the sequence of runs of 0's and 1's of lengths from 1 up to 10 and it will return all the locations of all the runs in each length of k
+a = lapply(1:10,function(i) {runfunction(seq_a, i)})
+
+#use sapply function simplify the result from above to get the frequency of each of them 
+zeroes_k1 = sapply(1:10, function(i) {length(a[[i]]$zeroes)})
+ones_k1 = sapply(1:10, function(i) {length(a[[i]]$ones)})
+```
+
+####(b) p00 = 0.8, p01 = 0.2,p10 = 0.1, p11 = 0.9
+```{r}
+#do the same thing to the second transition probability matrix
+seq_b = markov_chain(10000,0.8,0.9,0)
+b = lapply(1:10,function(i) {runfunction(seq_b, i)})
+zeroes_k2 = sapply(1:10, function(i) {length(b[[i]]$zeroes)})
+ones_k2 = sapply(1:10, function(i) {length(b[[i]]$ones)})
+```
+
+```{r}
+#plots of 4i
+par(mfrow=c(2,2))
+plot(zeroes_k1,col = "red",xlab = "lenght of k",ylab= "frequency of zeroes", main = "Frequency of runs of 0’s of lengths up to 10 \nof first transition probability matrix")
+plot(zeroes_k2,col = "red",xlab = "lenght of k",ylab= "frequency of zeroes", main = "frequency of runs of 0’s of lengths up to 10 \nof second transition probability matrix")
+
+plot(ones_k1,col = "red",xlab = "lenght of k",ylab= "frequency of ones", main = "Frequency of runs of 1’s of lengths up to 10 \nof first transition probability matrix")
+plot(ones_k2,col = "red",xlab = "lenght of k",ylab= "frequency of ones", main = "Frequency of runs of 1’s of lengths up to 10 \nof second transition probability matrix")
+```
+
+I think the plots are good representations of the data because it shows the distributions of the runs of 0's and 1's of length up to 10.
+From the plots, we can see the pattern of first transition probability matrix with p00 and p11 = 0.5 has nearly the same amount of runs of 0's and 1's while the second transition probability have much more 0's than 1's. From the plots, we can see that as k approach 10, the frequencies of the runs will become smaller and smaller.
+
+####4(ii) I got help from TA Office hour
+####(a) p00 = 0.5, p01 = 0.5, p10 = 0.5, p11 = 0.5
+```{r}
+#combining problem 1 and 3 together to get all the starting, ending location and the length that start and end with the motifs 0000 and 1111
+
+seq_a = markov_chain(10000,0.5,0.5,0)
+tmp = runfunction2(seq_a,c(0,0,0,0),c(1,1,1,1))
+
+#used lapply to find all of the subsequences to see if its right for my own interest
+all_seq = lapply(1:length(tmp$start), function(i)  seq_a[tmp$start[i]:(tmp$start[i]+tmp$length[i]-1)])
+
+#find the starting locations of all subsequences with length 200 that start and end with the motifs 0000 and 1111
+location1 = tmp$start[tmp$length==200]
+location1
+```
+
+####(b) p00 = 0.8, p01 = 0.2, p10 = 0.1, p11 = 0.9
+```{r}
+#combining problem 1 and 3 together to get all the starting, ending location and the length that start and end with the motifs 0000 and 1111 
+seq_b = markov_chain(10000,0.8,0.9,0)
+tmp2 = runfunction2(seq_b,c(0,0,0,0),c(1,1,1,1))
+
+#used lapply find all of the subsequences
+all_seq2 = lapply(1:length(tmp2$start), function(i)  seq_b[tmp2$start[i]:(tmp2$start[i]+tmp2$length[i]-1)])
+
+#find the starting locations of all subsequences with length 200
+location2=tmp2$start[tmp2$length==200]
+location2
+```
+
+####4(iii)
+```{r}
+#summary of the frequency of runs of 0's in 1st matrix
+summary(zeroes_k1) 
+#summary of the frequency of runs of 0's in 2nd matrix
+summary(zeroes_k2)
+#summary of the frequency of runs of 1's in 1st matrix
+summary(ones_k1)
+#summary of the frequency of runs of 1's in 2nd matrix
+summary(ones_k2)
+
+#numbers of subsequences with length 200
+length(location1)
+length(location2)
+```
+
+From the summaries, the mean shows the average number of runs of 0's and 1's. It appears that the mean of the frequence of runs zeroes and ones of the first transition probability matrix is 983.3 and 1041.0, which is really close to each other. Not only that, the minimum and maximum are also nearly the same. The maximums of the frequence of runs of 0's and 1's happened at k=1, and they are really close to 5000, 50% of 10000. On the other hand, the mean of the frequence of runs of zeroes and ones of the second matrix is 3489 and 259.7, respectively. It also has a large minimum and maximum. The maximum of zeroes is 7950 and the minimum is 2050, approximatly 80% and 20% of our data. These summary confirms the probabilities in the matrice and that the first transition probability matrix has the probabilities of transitioning from 0 to 1 or 1 to 0 is higher than the second matrix. By checking the numbers of subsequences with length 200, it appears that the first matrix has a higher chance to have subsequences with length 200 that start and end with the
+motifs 0000 and 1111.
+
+
+###Problem 5
+```{r}
+#package used:
+library(ggplot2) #used to create plots
+library(reshape) #for the function 'melt' to melt a dataframe for easy casting
+```
+
+####(i) AirPassengers
+#### I used the website below to see how to change a ts class data to matrix from
+#### https://plot.ly/ggplot2/time-series/
+```{r}
+data("AirPassengers")
+class(AirPassengers)
+summary(AirPassengers)
+
+#histogram
+hist(AirPassengers, main="Histogram for Air Passengers",     xlab="Passengers", ylab="Frequency of Passengers", xlim=c(100,650), las=1, breaks=40, col = "blue") 
+rug(AirPassengers) #shows the actual observations
+
+#time series plot of data
+x = as.vector(AirPassengers)
+t = as.vector(time(AirPassengers))
+n = length(t)
+plot(t, x, type = "o", main = "Monthly totals of international airline passengers (1949-1960)", xlab = "time", ylab = "Air Passengers", col = "red")
+abline(fit <- lm(AirPassengers~time(AirPassengers))) #plots the least squares regression line
+
+#shows the time series decomposition into trend, seasonal and random  noise to see if there's any trend in this time serie
+plot(decompose(AirPassengers), col="red")
+
+#transforming the data from ts class into a matrix so that I can use them in ggplot
+myData <- data.frame(Year = c(floor(time(AirPassengers) + .01)), Month = c(cycle(AirPassengers)),AirPassengers = c(AirPassengers))
+
+ggplot(myData, aes(x = Year, y = AirPassengers, colour = Month))+
+  geom_point(aes(color= Month)) +
+  ggtitle("Monthly totals of international airline passengers (1949-1960)")
+```
+
+The data set Air Passenger is a time series that contains the monthly totals of international airline passengers from 1949 to 1960. In the summary, the mean shows us that approximately 280,300 people travelled per month. The plots of the data help us to see that there is a overall increasing linear trend and we can observe that the total number of passengers will reach the peak in July and August every year. The histogram also shows there is outliers.
+
+####(ii) EuStockMarkets
+```{r}
+data("EuStockMarkets")
+head(EuStockMarkets)
+class(EuStockMarkets)
+summary(EuStockMarkets)
+dim(EuStockMarkets) 
+
+#time series plot
+plot.ts(EuStockMarkets, main= "Daily Closing Prices of Major European Stock Indices, 1991–1998",xlab = "Year", ylab = "Daily Closing Prices", col = "red")
+
+#individual histogram to see the distribution of the data
+par(mfrow=c(2,2))
+hist(EuStockMarkets[,1], main = "Histogram for DAX",xlab = "Daily Closing Price",breaks=40)
+rug(EuStockMarkets[,1], col = "red") #shows the actual observations
+hist(EuStockMarkets[,2], main = "Histogram for SMI",xlab = "Daily Closing Price",breaks=40)
+rug(EuStockMarkets[,2], col = "red")
+hist(EuStockMarkets[,3], main = "Histogram for CAS",xlab = "Daily Closing Price",breaks=40)
+rug(EuStockMarkets[,3], col = "red")
+hist(EuStockMarkets[,4], main = "Histogram for FTSE",xlab = "Daily Closing Price",breaks=40)
+rug(EuStockMarkets[,4], col = "red")
+
+#boxplot
+par(mfrow=c(1,1))
+boxplot(EuStockMarkets, main = "Boxplot of major European stock indices",col= rainbow(4), xlab = "Major European stock indices", ylab = "Daily Closing Prices")
+```
+
+This multivariate time series data "EuStockMarkets" contains the daily closing prices of 4 major European stock indices: DAX, SMI, CAC, and FTSE. From the summary, it shows that FTSE has the highest average daily closing prices while CAC has the lowest. From the time series plot, we can see that all four stock indices have a overall increasing trends over the years. By observing the histogram and boxplot, all of the stocks have outliers.
+
+####(iii) PlantGrowth
+```{r}
+data(PlantGrowth)
+head(PlantGrowth)
+class(PlantGrowth)
+summary(PlantGrowth$weight[1:10]) #ctrl
+summary(PlantGrowth$weight[11:20]) #trt1
+summary(PlantGrowth$weight[21:30]) #trt2
+dim(PlantGrowth) #get data dimensions
+
+#boxplot
+boxplot(weight ~ group, data = PlantGrowth, main = "Boxplot of PlantGrowth data", ylab = "Dried weight of plants", xlab = "level of groups", col = "lightgray")
+
+#plot of the data
+ggplot(PlantGrowth, aes(x = weight, y = group))+
+  geom_line(aes(color=group)) +
+  geom_point(aes(color=group)) +
+  ggtitle("Results from an Experiment on Plant Growth")
+```
+
+The PlantGrowth dataset contains 30 cases, 10 cases on each treatment. The results from the data obtained under control and two other treatment conditions appear to be quite different. From the summaries, the mean of the control condition is 5.032 ,treatment 1's is 4.661 and treatment 2's is 5.526. By looking at the boxplot and ggplot, treatment 1 seems to have outliers and is more light weighted while treatment 2 is heavier compared to the control group.
+
+####(iv) trees 
+```{r}
+data(trees)
+head(trees)
+class(trees)
+summary(trees)
+dim(trees) 
+attach(trees)
+
+#Scatterplot Matrices to look at the relationship
+pairs(trees, main = "Girth, Height, and Volume scatter plot")
+
+#individual histograms to see the distributions
+par(mfrow=c(3,1))
+hist(Girth, main = "Histogram of Girth",xlim=c(8,20), las= 1,breaks=30,freq=FALSE)
+lines(density(Girth),lwd=1.5,col = "red")
+rug(Girth,col="red")
+
+hist(Height,main = "Histogram of Height",xlim=c(60,90), las = 1,breaks=30,freq = FALSE)
+lines(density(Height),lwd=1.5,col = "red")
+rug(Height,col="red")
+
+hist(Volume, main = "Histogram of Volume",breaks=30, las = 1,freq = FALSE)
+lines(density(Volume),lwd=1.5,col = "red")
+rug(Volume,col="red")
+
+#boxplot
+par(mfrow=c(1,1))
+#The function melt will let me able to use the data easily. It will put all the variables into one group called variable and all the corresponding data into another group called value
+ggplot(melt(trees), aes(variable, value)) + 
+  geom_boxplot(aes(color = variable)) +
+  ggtitle("Boxplot of Black Cherry Trees data")
+
+detach(trees) #remove the data from the search path
+```
+
+The trees dataset provides the measurements of the girth, height and volume of timber in 31 felled black cherry trees. From the summary, the mean of Girth is 13.25 inches, height is 76 ft, and volumn is 30.17 cubic ft.The scatterplot matrices show that both girth and height seem to be strongly correlated to the volume (especially girth). Boxplot and histogram provide the distribution of the data, which shows that the distribution of volume is skewed and has an outlier.
+
+####(v) airquality
+```{r}
+data(airquality)
+class(airquality)
+summary(airquality)
+dim(airquality)
+
+#individual histograms to see the distributions
+par(mfrow=c(2,1))
+hist(airquality$Ozone, main = "Mean ozone in parts at Roosevelt Island", xlab = "Mean ozone in parts per billion", las =1, breaks=30)
+rug(airquality$Ozone,col="red")
+
+hist(airquality$Solar.R, main = "Solar radiation in Langleys at Central Park", xlab ="Solar radiation", las =1, breaks=30)
+rug(airquality$Solar.R,col="red")
+
+hist(airquality$Wind, main = "Average wind speed at LaGuardia Airport", xlab = "speed in miles per hour", las =1, breaks=20)
+rug(airquality$Wind,col="red")
+
+hist(airquality$Temp,main = "Maximum daily temperature at La Guardia Airpor",xlab="Temperature in degrees Fahrenheit", ylab = "Temperature Frequency", las = 1, breaks=20)
+rug(airquality$Temp,col="red")
+
+#data plot
+#used melt to group the datas in the groups of variable and value again.
+#used [,1:4] because month and day are categorial
+ggplot(melt(airquality[,1:4]), aes(variable,value)) +
+  geom_boxplot(aes(color = variable)) +
+  ggtitle("New York Air Quality Measurements Data")
+
+#Since the data plot doesn't show much relationship, I looked at scatterplot Matrices
+pairs(airquality[,1:4],panel = panel.smooth, main = "Air Quality Data")
+
+#density plot
+#setting alpha = 0.5 to make the graphs transparent
+ggplot(melt(airquality[,1:4])) + 
+  geom_density(aes(value, color = variable, fill = variable), alpha=0.5) +
+  ggtitle("Density of New York Air Quality Measurements")
+
+#individual boxplot
+ggplot(airquality, aes(Month, Temp, group = Month)) +
+  geom_boxplot(aes(color = Month)) +
+  ggtitle("Boxplot of Monthly Air temperature in NYC")
+
+ggplot(airquality, aes(Month, Ozone, group = Month)) +
+  geom_boxplot(aes(color = Month)) +
+  ggtitle("Boxplot of Monthly recorded Ozone level in NYC")
+
+ggplot(airquality, aes(Month, Wind, group = Month)) +
+  geom_boxplot(aes(color = Month)) +
+  ggtitle("Boxplot of Monthly recorded Wind Speed in NYC")
+
+ggplot(airquality, aes(Month, Solar.R, group = Month)) +
+  geom_boxplot(aes(color = Month)) +
+  ggtitle("Boxplot of Monthly recorded Solar radiation in NYC")
+```
+
+This air quality dataset contains daily air quality measurements in New York City, from May to September 1973. The dataframe has 153 observations of four variables: Ozone Level, Solar Radiation, Wind Speed, and Air Temperature. We can see from the ggplots that the higest recorded value for Ozone is in August, which is followed by a relatively high temperature. And from the scatterplot matrice, Ozone level and Air Temperature seem strongly correlated while the others did not show much relationship.

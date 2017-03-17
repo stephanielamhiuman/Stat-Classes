@@ -1,0 +1,674 @@
+---
+title: "STA141 HW2"
+author: "Hiu Man Lam"
+date: "10/24/2016"
+output: html_document
+---
+
+
+R Appendix:
+
+######   Code that used on report   ######
+
+
+```{r}
+#package used:
+library(ggplot2) #for creating plot
+library(reshape) #for the function 'melt' to melt a dataframe for easy casting
+library(mosaic) #for the mosaic plot to look for relationship
+library(VIM) #for the function 'aggr' to create plots for missing data
+library(corrgram) #for correlogram
+library(car) #for scatterplot Matrix
+library(vcd)
+#The basic analysis
+load("/Volumes/StorEDGE/*ucdavis/STA141A/NHANES.Rdata")
+head(NHANES)
+summary(NHANES)
+dim(NHANES)
+names(NHANES)
+
+#rename the data
+NHANES$Ed = factor(NHANES$Ed, levels = c(0, 1), labels = c("No college education", "College education"))
+NHANES$Race = factor(NHANES$Race, levels = c(0, 1), labels = c("non-Caucasian", "Caucasian"))
+
+#cut Age into 2groups
+NHANES$Age_cut = cut(NHANES$Age,2)
+levels(NHANES$Age_cut) = c("young","old")
+
+#cut weight into 3 groups
+NHANES$Weight_cut = cut(NHANES$Weight, 3)
+levels(NHANES$Weight_cut) = c("lightweighted","normal","heavy")
+
+#attach data for easy ascess
+attach(NHANES)
+
+#Boxplot of NHANES data
+ggplot(melt(NHANES), aes(variable, value)) + 
+  geom_boxplot(aes(color = variable)) +
+  ggtitle("Boxplot of NHANES data")
+
+#patterns of missing datas
+aggr(NHANES, col=c("navyblue","yellow"),
+     numbers=TRUE,
+     labels=names(NHANES),
+     cex.axis=0.6, gap=1,
+     ylab=c("Histogram of missing data in NHANES","Pattern of the missing data in NHANES"))
+
+#correlogram of NHANES data
+corrgram(NHANES, order = TRUE, 
+         lower.panel = panel.shade, upper.panel = panel.pie, 
+         text.panel = panel.txt,
+         main = "Correlogram of NHANES data")
+
+#scatterplot matrix of all the continuous variables
+scatterplotMatrix(~ Age + Weight + BMI + Diet.Iron + Albumin + Serum.Iron +
+  TIBC + Transferin + Hemoglobin , data = NHANES, 
+  main = "Basic scatter plot matrix of NHANES data",spread=FALSE, 
+	diagonal = "histogram")
+
+
+#Density plot of Weight by Sex, and in different rate 
+ggplot(NHANES, aes(Weight))+
+  geom_density(aes(color = Sex)) +
+  ggtitle("Density plot of Weight by Sex")
+
+ggplot(NHANES, aes(Weight))+
+  geom_density(aes(color = Sex)) +
+  facet_grid(.~Race) +
+  ggtitle("Density plot of Weight by Sex in different Race")
+
+
+### Does smoking affect the chemical level?
+#boxplot of Smoke vs other chemical
+par(mfrow=c(2,3))
+plot(Smoke, Hemoglobin, main="Smoke vs Hemoglobin", ylab = "Hemoglobin", col = "gold")
+
+plot(Smoke, Diet.Iron, main = "Smoke vs Diet Iron", ylab = "Diet Iron", col = "lightpink")
+plot(Smoke, Albumin, main = "Smoke vs Albumin", ylab = "Albumin(g/l)", col = "lightpink")
+
+plot(Smoke, Serum.Iron, main = "Smoke vs serum Iron", ylab = "Serum Iron(ug/l)", col = "lightpink")
+
+plot(Smoke, TIBC, main = "Smoke vs TIBC", ylab = "TIBC(ug/l)", col = "lightpink")
+
+plot(Smoke, Transferin, main="Smoke vs Transferin", ylab = "Transferin", col = "lightpink")
+
+#ggplot of Diet Iron and Hemoglobin based on Sex
+
+
+#ggplot of Serum Iron and Hemoglobin based on Sex
+ggplot(NHANES, aes(Serum.Iron, Hemoglobin, color = Sex))+ 
+  geom_jitter(position = position_jitter(width = 0.5) , alpha = 0.1) +
+  ggtitle("Serum Iron and Hemoglobin based on Sex") +
+  xlab("Serum Iron(ug/l)")+
+  geom_smooth(method = "lm",se=F, color = "navyblue")
+
+
+#mosaic plots to look at the relationship between categorial variables
+# Smoking on incidences of cancer
+mosaic(~ Cancer.Incidence + Smoke, data = NHANES, shade = TRUE, legend = TRUE,main="Smoking on incidences of cancer")
+
+assoc(~ Cancer.Incidence + Smoke, data = NHANES, shade = TRUE, legend = TRUE)
+
+# Smoking on incidences of cancer + age
+mosaic(~ Cancer.Incidence + Smoke | Age_cut, data = NHANES, shade = TRUE, legend = TRUE,main="Smoking on incidences of cancer across age groups")
+
+assoc(~ Cancer.Incidence + Smoke + Age_cut, data = NHANES, shade = TRUE, legend = TRUE)
+
+# Smoking on incidences of cancer + Sex
+mosaic(~ Cancer.Incidence + Smoke | Sex, data = NHANES, shade = TRUE, legend = TRUE,main="Smoking on incidences of cancer across Sex")
+
+assoc(~ Cancer.Incidence + Smoke + Sex, data = NHANES, shade = TRUE, legend = TRUE)
+
+# Smoking on incidences of cancer + Race
+mosaic(~ Cancer.Incidence + Smoke | Race, data = NHANES, shade = TRUE, legend = TRUE, main="Smoking on incidences of cancer across Race")
+
+assoc(~ Cancer.Incidence + Smoke + Race, data = NHANES, shade = TRUE, legend = TRUE)
+
+# Smoking on incidences of cancer + Ed
+mosaic(~ Cancer.Incidence + Smoke | Ed, data = NHANES, shade = TRUE, legend = TRUE,main="Smoking on incidences of cancer across Education level")
+
+assoc(~ Cancer.Incidence + Smoke + Ed, data = NHANES, shade = TRUE, legend = TRUE)
+
+
+#try to fit regression line to predict BMI
+#BMI and Age by Ed,Race
+ggplot(NHANES, aes(Age,BMI)) + 
+  geom_density2d()+
+  labs(title = "BMI vs Age by Education level and Race", x = "Age", y = "BMI") +
+  facet_grid(Ed ~ Race)+
+  geom_smooth(method = "lm",fill = "red", color = "black")
+
+
+#remove the data from the search path
+detach(NHANES)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#####   Code that are not used on report    #####
+
+```{r}
+####look through all the coparisons that has association for natural cluster
+
+library(lattice)
+###Strong association
+#Serum Iron and Transferin
+
+plot(hexbin(Transferin, Serum.Iron, xbins = 50))
+xyplot(Transferin ~ Serum.Iron| Smoke,
+       grid = TRUE,
+       group = Smoke, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "Serum Iron vs Tansferin in different smoking level")
+
+xyplot(Transferin ~ Serum.Iron| Race,
+       grid = TRUE,
+       group = Race, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "Serum Iron vs Tansferin in different Race")
+
+xyplot(Transferin ~ Serum.Iron| Ed,
+       grid = TRUE,
+       group = Ed, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "Serum Iron vs Tansferin in different Ed")
+
+xyplot(Transferin ~ Serum.Iron| Sex,
+       grid = TRUE,
+       group = Sex, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "Serum Iron vs Tansferin in different Gender")
+
+#BMI vs Weight
+xyplot(BMI ~ Weight| Smoke,
+       grid = TRUE,
+       group = Smoke, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "BMI vs Weight in different smoking level")
+
+xyplot(BMI ~ Weight| Race,
+       grid = TRUE,
+       group = Race, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "BMI vs Weight in different Race")
+
+xyplot(BMI ~ Weight| Ed,
+       grid = TRUE,
+       group = Ed, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "BMI vs Weight in different Ed")
+
+xyplot(BMI ~ Weight| Sex,
+       grid = TRUE,
+       group = Sex, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "BMI vs Weight in different Gender")
+
+####Moderate assocation
+#Transferin vs TIBC
+xyplot( Transferin ~ TIBC| Smoke,
+       grid = TRUE,
+       group = Smoke, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "Transferin vs TIBC in different smoking level")
+
+xyplot(Transferin ~ TIBC| Race,
+       grid = TRUE,
+       group = Race, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "Transferin vs TIBC in different Race")
+
+xyplot(Transferin ~ TIBC| Ed,
+       grid = TRUE,
+       group = Ed, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "Transferin vs TIBC in different Education level")
+
+xyplot(Transferin ~ TIBC| Sex,
+       grid = TRUE,
+       group = Sex, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "Transferin vs TIBC in different Sex")
+
+###Weak Association
+#Serum Iron vs Hemoglobin
+xyplot(Hemoglobin ~ Serum.Iron | Smoke,
+       grid = TRUE,
+       group = Smoke, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "Serum Iron vs Hemoglobin in different smoking level")
+
+xyplot(Hemoglobin ~ Serum.Iron| Race,
+       grid = TRUE,
+       group = Race, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "Serum Iron vs Hemoglobin in different Race")
+
+xyplot(Hemoglobin ~ Serum.Iron| Ed,
+       grid = TRUE,
+       group = Ed, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "Serum Iron vs Hemoglobin in different Education level")
+
+xyplot(Hemoglobin ~ Serum.Iron| Sex,
+       grid = TRUE,
+       group = Sex, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "Serum Iron vs Hemoglobin in different Sex")
+
+#Diet Iron vs Hemoglobin
+xyplot(Hemoglobin ~ Diet.Iron| Smoke,
+       grid = TRUE,
+       group = Smoke, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "Diet Iron on Hemoglobin in different smoking level")
+
+xyplot(Hemoglobin ~ Diet.Iron| Race,
+       grid = TRUE,
+       group = Race, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "Diet Iron on Hemoglobin in different Race")
+
+xyplot(Hemoglobin ~ Diet.Iron| Ed,
+       grid = TRUE,
+       group = Ed, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "Diet Iron on Hemoglobin in different Education level")
+
+xyplot(Hemoglobin ~ Diet.Iron| Sex,
+       grid = TRUE,
+       group = Sex, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "Diet Iron on Hemoglobin in different Sex")
+
+#Hemoglobin vs Albumin
+xyplot(Hemoglobin ~ Albumin| Smoke,
+       grid = TRUE,
+       group = Smoke, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "Hemoglobin vs Albumin in different smoking level")
+
+xyplot(Hemoglobin ~ Albumin| Race,
+       grid = TRUE,
+       group = Race, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "Hemoglobin vs Albumin in different Race")
+
+xyplot(Hemoglobin ~ Albumin| Ed,
+       grid = TRUE,
+       group = Ed, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "Hemoglobin vs Albumin in different Education level")
+
+xyplot(Hemoglobin ~ Albumin| Sex,
+       grid = TRUE,
+       group = Sex, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "Hemoglobin vs Albumin in different Sex")
+
+#Hemoglobin vs Weight
+xyplot(Hemoglobin ~ Weight| Smoke,
+       grid = TRUE,
+       group = Smoke, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "Hemoglobin vs Weight in different smoking level")
+
+xyplot(Hemoglobin ~ Weight| Race,
+       grid = TRUE,
+       group = Race, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "Hemoglobin vs Weight in different Race")
+
+xyplot(Hemoglobin ~ Weight| Ed,
+       grid = TRUE,
+       group = Ed, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "Hemoglobin vs Weight in different Education level")
+
+xyplot(Hemoglobin ~ Weight| Sex,
+       grid = TRUE,
+       group = Sex, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "Hemoglobin vs Weight in different Sex")
+
+
+#Age vs Albumin
+xyplot(Age ~ Albumin| Smoke,
+       grid = TRUE,
+       group = Smoke, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "Age vs Albumin in different smoking level")
+
+xyplot(Age ~ Albumin| Race,
+       grid = TRUE,
+       group = Race, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "Age vs Albumin in different Race")
+
+xyplot(Age ~ Albumin| Ed,
+       grid = TRUE,
+       group = Ed, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "Age vs Albumin in different Education level")
+
+xyplot(Age ~ Albumin| Sex,
+       grid = TRUE,
+       group = Sex, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "Age vs Albumin in different Sex")
+
+#Age vs TIBC
+xyplot(Age ~ TIBC| Smoke,
+       grid = TRUE,
+       group = Smoke, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "Age vs TIBC in different smoking level")
+
+xyplot(Age ~ TIBC| Race,
+       grid = TRUE,
+       group = Race, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "Age vs TIBC in different Race")
+
+xyplot(Age ~ TIBC| Ed,
+       grid = TRUE,
+       group = Ed, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "Age vs TIBC in different Education level")
+
+xyplot(Age ~ Albumin| Sex,
+       grid = TRUE,
+       group = Sex, 
+       type = c("p", "smooth"),  lwd = 4, alpha = 1/2,
+       main = "Age vs TIBC in different Sex")
+
+```
+
+Does smoking affect the chemical level?
+
+```{r}
+#boxplot of Smoke vs other chemical
+par(mfrow=c(2,3))
+plot(Smoke, Hemoglobin, main="Smoke vs Hemoglobin", ylab = "Hemoglobin", col = "gold")
+plot(Smoke, Diet.Iron, main = "Smoke vs Diet Iron", ylab = "Diet Iron", col = "lightpink")
+plot(Smoke, Albumin, main = "Smoke vs Albumin", ylab = "Albumin(g/l)", col = "lightpink")
+plot(Smoke, Serum.Iron, main = "Smoke vs serum Iron", ylab = "Serum Iron(ug/l)", col = "lightpink")
+plot(Smoke, TIBC, main = "Smoke vs TIBC", ylab = "TIBC(ug/l)", col = "lightpink")
+plot(Smoke, Transferin, main="Smoke vs Transferin", ylab = "Transferin", col = "lightpink")
+
+#Further analyize:
+par(mfrow=c(1,1))
+ggplot(NHANES, aes(Hemoglobin, Diet.Iron))+ 
+  geom_jitter(position = position_jitter(width = 0.5) , alpha = 0.1) +
+  ggtitle("Diet Iron and Hemoglobin") +
+  geom_smooth(method = "lm",se=F, color = "navyblue")
+
+ggplot(NHANES, aes(Diet.Iron,Hemoglobin, color = Ed))+ 
+  geom_jitter(position = position_jitter(width = 0.5) , alpha = 0.1) +
+  ggtitle("Diet Iron and Hemoglobin based on Education") +
+  geom_smooth(method = "lm",se=F, color = "navyblue")
+
+ggplot(NHANES, aes(Diet.Iron, Hemoglobin, color = Sex))+ 
+  geom_jitter(position = position_jitter(width = 0.5) , alpha = 0.1) +
+  ggtitle("Diet Iron and Hemoglobin based on Sex") +
+  xlab("Diet Iron")+
+  geom_smooth(method = "lm",se=F, color = "navyblue") +
+
+ggplot(NHANES, aes(Diet.Iron, Hemoglobin, color = Race))+ 
+  geom_jitter(position = position_jitter(width = 0.5) , alpha = 0.1) +
+  ggtitle("Diet Iron and Hemoglobin based on Race") +
+  geom_smooth(method = "lm",se=F, color = "navyblue")
+
+#serum Iron and Hemoglobin:
+ggplot(NHANES, aes(Serum.Iron, Hemoglobin, color = Sex))+ 
+  geom_jitter(position = position_jitter(width = 0.5) , alpha = 0.1) +
+  ggtitle("Serum Iron and Hemoglobin based on Sex") +
+  xlab("Serum Iron(ug/l)")+
+  geom_smooth(method = "lm",se=F, color = "navyblue")
+
+ggplot(NHANES, aes(Serum.Iron, Hemoglobin, color = Ed))+ 
+  geom_jitter(position = position_jitter(width = 0.5) , alpha = 0.1) +
+  ggtitle("Serum Iron and Hemoglobin based on Education") +
+  geom_smooth(method = "lm",se=F, color = "navyblue")
+
+ggplot(NHANES, aes(Serum.Iron, Hemoglobin, color = Race))+ 
+  geom_jitter(position = position_jitter(width = 0.5) , alpha = 0.1) +
+  ggtitle("Serum Iron and Hemoglobin based on Race") +
+  geom_smooth(method = "lm",se=F, color = "navyblue")
+
+ggplot(NHANES, aes(Albumin, Hemoglobin, color = Sex))+ 
+  geom_jitter(position = position_jitter(width = 0.5) , alpha = 0.1) +
+  ggtitle("Albumin and Hemoglobin based on Sex") +
+  geom_smooth(method = "lm",se=F, color = "navyblue")
+
+ggplot(NHANES, aes(Sex, Hemoglobin))+ 
+  geom_boxplot(aes(color = Race)) +
+  ggtitle("Boxplot of Hemoglobin and Sex Based on Race") 
+
+ggplot(NHANES, aes(Ed, Hemoglobin))+ 
+  geom_boxplot(aes(color = Smoke)) +
+  ggtitle("Boxplot of Hemoglobin and Education Based on Smoking levels")
+```
+
+3 & 4) Compare pairs of categorical variables
+
+```{r}
+# categorical	vs categorical
+library(vcd)
+
+#What kind of pattern is present in terms of the effect of Smoking on incidences of cancer?
+
+#barplot of Smoke vs Cancer Incidence
+plot(Smoke, Cancer.Incidence, main = "Barplot of Smoke vs Cancer Incidence", xlab= "Cancer Incidence", col = c("lightyellow", "lightblue"), ylab = "Smoke", pch = 10)
+
+#Cancer incidence vs Cancer Death
+mosaic(~ Cancer.Incidence + Cancer.Death, data = NHANES, shade = TRUE, legend = TRUE)
+
+```
+
+
+```{r}
+###ggplot of weight and all other variables based on Sex###
+ggplot(NHANES, aes(Hemoglobin, Weight, color = Sex)) + 
+  geom_jitter(position = position_jitter(width = 0.5) , alpha = 0.1) +
+  ggtitle("ggplot of Weight and Hemoglobin based on Sex on the effects of Smoking") +
+  geom_smooth(method = "lm",se=F, color = "navyblue") +
+  facet_grid(Smoke ~ ., scale="free")
+
+ggplot(NHANES, aes(Serum.Iron,Weight, color = Sex)) + 
+  geom_jitter(position = position_jitter(width = 0.5) , alpha = 0.1) +
+  ggtitle("ggplot of Weight and Serum Iron based on Sex on the effects of Smoking") +
+  geom_smooth(method = "lm",se=F, color = "navyblue") +
+  facet_grid(Smoke ~ ., scale="free")
+
+ggplot(NHANES, aes(Transferin, Weight, color = Sex)) + 
+  geom_jitter(position = position_jitter(width = 0.5) , alpha = 0.1) +
+  ggtitle("ggplot of Weight and Transferin based on Sex on the effects of Smoking") +
+  geom_smooth(method = "lm",se=F, color = "navyblue") +
+  facet_grid(Smoke ~ ., scale="free")
+
+ggplot(NHANES, aes(Diet.Iron, Weight, color = Sex)) + 
+  geom_jitter(position = position_jitter(width = 0.5) , alpha = 0.1) +
+  ggtitle("ggplot of Weight and Diet Iron based on Sex on the effects of Smoking") +
+  geom_smooth(method = "lm",se=F, color = "navyblue") +
+  facet_grid(Smoke ~ ., scale="free")
+
+ggplot(NHANES, aes(Serum.Iron, Weight,  color = Sex))+ 
+  geom_jitter(position = position_jitter(width = 0.5) , alpha = 0.1) +
+  ggtitle("ggplot of Weight and Serum Iron based on Sex on the effects of Smoking") +
+  geom_smooth(method = "lm",se=F, color = "navyblue") +
+  facet_grid(Smoke ~ ., scale="free")
+
+ggplot(NHANES, aes(TIBC, Weight, color = Sex))+ 
+  geom_jitter(position = position_jitter(width = 0.5) , alpha = 0.1) +
+  ggtitle("ggplot of Weight and TIBC based on Sex on the effects of Smoking") +
+  geom_smooth(method = "lm",se=F, color = "navyblue") +
+  facet_grid(Smoke ~ ., scale="free")
+
+ggplot(NHANES, aes(TIBC, Weight, color = Sex)) +
+  stat_density2d(aes(fill = ..level..), geom = "polygon") +
+  ggtitle("2D Density plot of Weight and Albumin") +
+  geom_smooth(method = lm)
+
+ggplot(NHANES, aes(Albumin, Weight,  color = Sex))+ 
+  geom_jitter(position = position_jitter(width = 0.5) , alpha = 0.1) +
+  ggtitle("ggplot of Weight and Serum Iron based on Sex on the effects of Smoking") +
+  geom_smooth(method = "lm",se=F, color = "navyblue") +
+  facet_grid(Smoke ~ ., scale="free")
+
+ggplot(NHANES, aes(Albumin, Weight, color = Sex)) +
+  stat_density2d(aes(fill = ..level..), geom = "polygon") +
+  ggtitle("2D Density plot of Weight and Albumin") +
+  geom_smooth(method = lm)
+
+#TIBC and transferin
+ggplot(NHANES, aes(TIBC, Transferin))+ 
+  geom_jitter(position = position_jitter(width = 0.5) , alpha = 0.1) +
+  ggtitle("ggplot of Weight and TIBC based on Sex on the effects of Smoking") +
+  geom_smooth(method = "lm",se=F, color = "navyblue") +
+  facet_grid(Sex ~ ., scale="free")
+
+ggplot(NHANES, aes(TIBC, Transferin))+ 
+  geom_jitter(position = position_jitter(width = 0.5) , alpha = 0.1) +
+  ggtitle("ggplot of Weight and TIBC based on Sex on the effects of Smoking") +
+  geom_smooth(method = "lm",se=F, color = "navyblue") +
+  facet_grid(Ed ~ ., scale="free")
+
+ggplot(NHANES, aes(TIBC, Transferin))+ 
+  geom_jitter(position = position_jitter(width = 0.5) , alpha = 0.1) +
+  ggtitle("ggplot of Weight and TIBC based on Sex on the effects of Smoking") +
+  geom_smooth(method = "lm",se=F, color = "navyblue") +
+  facet_grid(Race ~ ., scale="free")
+
+ggplot(NHANES, aes(TIBC, Transferin))+ 
+  geom_jitter(position = position_jitter(width = 0.5) , alpha = 0.1) +
+  ggtitle("ggplot of Weight and TIBC based on Sex on the effects of Smoking") +
+  geom_smooth(method = "lm",se=F, color = "navyblue") +
+  facet_grid(Smoke ~ ., scale="free")
+```
+
+
+
+```{r}
+#Is cancer incidence related to age?
+#statistics about age, by cancer incidence.
+grp = group_by(NHANES, Cancer.Incidence)
+age = summarize(grp, mean = mean(Age), sd = sd(Age))
+arrange(age, mean)
+
+#plot of age distributions, by cancer incidence.
+ggplot(NHANES, aes(Cancer.Incidence, Age)) +
+  geom_boxplot(aes(fill = Cancer.Incidence)) + 
+  scale_fill_hue(guide = FALSE) +
+  labs(title = "Cancer incidence by age") +
+  xlab("Cancer Incidence") +
+  geom_point(stat = "summary", fun.y = mean, shape = 8) +
+  geom_line(aes(group = 1), stat = "summary", fun.y = mean)
+```
+
+
+
+```{r}
+#Smooth Scatter plots
+ggplot(NHANES) + geom_hex(aes(Diet.Iron, BMI), bins = 100) +
+  scale_fill_gradientn("", colours = rev(rainbow(10, end = 4/6)))  +
+  labs(title = "Smooth Scatter plot of Diet Iron vs BMI")
+
+ggplot(NHANES) + geom_hex(aes(Diet.Iron, Transferin), bins = 100) +
+  scale_fill_gradientn("", colours = rev(rainbow(10, end = 4/6)))  +
+  labs(title = "Smooth Scatter plot of Diet Iron vs Transferin")
+
+ggplot(NHANES) + geom_hex(aes(Albumin, BMI), bins = 100) +
+  scale_fill_gradientn("", colours = rev(rainbow(10, end = 4/6)))  +
+  labs(title = "Smooth Scatter plot of Albumin vs BMI")
+```
+
+
+6) Attempt to fit a line that best describes the relation between BMI and other variables
+
+```{r}
+# Fit regression lines 
+
+#BMI and Weight by Ed,Race
+ggplot(NHANES, aes(Weight,BMI)) + geom_density2d()+
+  labs(title = "BMI by Education level and Race", x = "Weight", y = "BMI") +
+  facet_grid(Ed ~ Race)+
+  geom_smooth(method = "lm", color = "black")
+
+ggplot(NHANES, aes(Weight,BMI)) + geom_density2d()+
+  labs(title = "BMI by Education level and Race", x = "Weight", y = "BMI") +
+  facet_grid(Smoke ~ Race)+
+  geom_smooth(method = "lm", color = "black")
+
+#BMI and Age by Ed,Race
+ggplot(NHANES, aes(Age,BMI)) + 
+  geom_density2d()+
+  labs(title = "BMI vs Age by Education level and Race", x = "Age", y = "BMI") +
+  facet_grid(Ed ~ Race)+
+  geom_smooth(method = "lm",fill = "red", color = "black")
+
+#BMI and Diet Iron by Ed,Race
+ggplot(NHANES, aes(Diet.Iron,BMI)) + geom_density2d()+
+  labs(title = "BMI by Education level and Race", x = "Diet Iron", y = "BMI") +
+  facet_grid(Ed ~ Race)+
+  geom_smooth(method = "lm", color = "black")
+
+#BMI and Albumin by Ed,Race
+ggplot(NHANES, aes(Albumin,BMI)) + geom_density2d()+
+  labs(title = "BMI by Education level and Race", x = "Albumin", y = "BMI") +
+  facet_grid(Ed~ Race)+
+  geom_smooth(method = "lm", color = "black")
+
+#BMI and Serum Iron by Ed,Race
+ggplot(NHANES, aes(Serum.Iron, BMI)) + geom_density2d()+
+  labs(title = "BMI by Race", x = "Serum Iron", y = "BMI") +
+  facet_grid(Ed ~ Race)+
+  geom_smooth(method = "lm", color = "black")
+
+#BMI and TIBC by Ed,Race
+ggplot(NHANES, aes(TIBC, BMI)) + geom_density2d()+
+  labs(title = "BMI by Education level and Race", x = "Serum Iron", y = "BMI") +
+  facet_grid(Ed ~ Race)+
+  geom_smooth(method = "lm", color = "black")
+
+#BMI and Transferin by Ed,Race
+ggplot(NHANES, aes(Transferin, BMI)) + geom_density2d()+
+  labs(title = "BMI by Education level and Race", "Transferin", y = "BMI") +
+  facet_grid(Ed ~ Race)+
+  geom_smooth(method = "lm", color = "black")
+
+#BMI and Hemoglobin by Ed,Race
+ggplot(NHANES, aes(Hemoglobin, BMI)) + geom_density2d()+
+  labs(title = "BMI by Education level and Race", x = "Hemoglobin", y = "BMI") +
+  facet_grid(Ed ~ Race)+
+  geom_smooth(method = "lm", color = "black")
+```
+
